@@ -3,9 +3,15 @@ pipeline {
 
     stages {
         stage('Checkout') {
-            steps {
-                git 'https://github.com/nekerobert/cicd-crud-app.git'
-            }
+             steps {  
+                withCredentials([string(credentialsId: 'github-access-token', variable: 'GITHUB_TOKEN')]) {  
+                    // Use the GITHUB_TOKEN directly in your script  
+                    sh "git clone https://oauth2:${GITHUB_TOKEN}@github.com/nekerobert/cicd-crud-app.git"  
+                }  
+            }  
+            // steps {
+            //     git 'https://github.com/nekerobert/cicd-crud-app.git'
+            // }
         }
 
         stage('Install Dependencies') {
@@ -19,20 +25,28 @@ pipeline {
                 sh 'npm test'
             }
         }
+            stage('Build and Push Docker Image') {  
+                steps {  
+                    withDockerRegistry([ credentialsId: '0e6326e5-fefa-4856-8343-305b174b4f8e', url: '' ]) {  
+                        // Use the Docker Hub credentials to build and push the image  
+                        sh 'docker build -t nekerobert/cicd-crud-app .'
+                        sh 'docker push cicd-crud'  
+                    }  
+            }  
+        } 
+        // stage('Build Docker Image') {
+        //     steps {
+        //         sh 'docker build -t nekerobert/cicd-crud-app .'
+        //     }
+        // }
 
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t nekerobert/cicd-crud-app .'
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                withDockerRegistry([ credentialsId: 'dockerhub-credentials', url: '' ]) {
-                    sh 'docker push nekerobert/cicd-crud-app'
-                }
-            }
-        }
+        // stage('Push Docker Image') {
+        //     steps {
+        //         withDockerRegistry([ credentialsId: 'dockerhub-credentials', url: '' ]) {
+        //             sh 'docker push nekerobert/cicd-crud-app'
+        //         }
+        //     }
+        // }
 
         stage('Deploy') {
             steps {
